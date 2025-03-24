@@ -1,0 +1,16 @@
+[project]
+name = "agent-utils"
+version = "0.1.0"
+description = "Agent utilities and connectors package"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
+
+[tool.poetry]
+name = "agent-utils"
+version = "0.1.0"
+description = "Agent utilities and connectors package"
+license = "MIT"  # Optional: specify your license
+
+[tool.poetry.dependencies]
+python = "^3.12"
