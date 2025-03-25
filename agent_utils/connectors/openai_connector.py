@@ -10,11 +10,6 @@ import json
 import logging
 
 class OpenAIConnector():
-    def __new__(cls, config=None):
-        if not hasattr(cls, 'instance'):
-            cls.instance = super(OpenAIConnector, cls).__new__(cls)
-        return cls.instance
-
     def __init__(self, config=None):
         self.config = config
         self.api_key = os.getenv('OPENAI_API_KEY')

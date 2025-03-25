@@ -6,7 +6,7 @@ import logging
 from google.cloud.bigquery.job import QueryJobConfig
 
 class BigQueryConnector():
-    def __init__(self, config):
+    def __init__(self, config=None):
         self.config = config
         dotenv.load_dotenv()
         self.client = bigquery.Client(

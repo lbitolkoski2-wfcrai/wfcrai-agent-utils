@@ -12,11 +12,6 @@ class ConfluenceConnector():
     - Provide a consistent interface for retrieving confluence page content
     - Retrieve html content for each page
     '''
-    def __new__(cls, config=None):
-        if not hasattr(cls, 'instance'):
-            cls.instance = super(ConfluenceConnector, cls).__new__(cls)
-        return cls.instance
-
     def __init__(self, config=None):
         dotenv.load_dotenv()
         self.config = config
