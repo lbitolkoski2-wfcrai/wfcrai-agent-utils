@@ -9,11 +9,14 @@ class DataAgentContext(BaseModel):
     info: Dict[str, Any] # Potential logging information or other metadata
     job_id: str
 
-
 class ConfluenceTable(BaseModel):
+    model_config = ConfigDict(extra='allow')
     table_name: str
     table_id: str
-    limitations: List[str]
+    limitations: str
+    overview: str
+    key_fields: Dict[str, str]
+
 
 class EmailContext(BaseModel):
     task_prompt: str
@@ -28,7 +31,7 @@ class FilterAgentResponse(BaseModel):
     datasets: List[Dataset]
 
 class ConfluenceAgentResponse(BaseModel):
-    datasets: List[Dataset]
+    datasets: List[ConfluenceTable]
 
 class SQLGenAgentResponse(BaseModel):
     sql: str

@@ -1,11 +1,11 @@
 #Wrapper Interface for LLM Connectors (OpenAI, Gemini)
-from openai_connector import OpenAIConnector
+import agent_utils.connectors.openai_connector as openai_connector
 
 class LLMConnector:
     def __init__(self, config, connector_type):
         match connector_type:
             case "openai":
-                self.openai_connector = OpenAIConnector(config)
+                self.openai_connector = openai_connector.OpenAIConnector(config)
             # case "gemini":
             #     self.gemini_connector = gemini.GeminiConnector(config)
             case _:
