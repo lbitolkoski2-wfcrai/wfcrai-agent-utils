@@ -40,6 +40,8 @@ class Assistant:
         }
         response = await self.llm_connector.prompt(ctx,prompts,response_spec)
         return {
-            "prompt": task_prompt,
+            "task": task_prompt,
+            "system_prompt": prompts['system_prompt'],
+            "user_prompt": prompts['user_prompt'],
             "response": response
         }

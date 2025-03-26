@@ -15,6 +15,7 @@ class ConfluenceTable(BaseModel):
     table_id: str
     limitations: str
     overview: str
+    usage: str
     key_fields: Dict[str, str]
 
 
