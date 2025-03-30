@@ -1,11 +1,11 @@
 import dotenv
 import os
-from openai import AzureOpenAI
+from langfuse.openai import AzureOpenAI
 from openai.types.beta import Assistant
 from pydantic import BaseModel
+from langfuse.decorators import observe
 
 import time
-
 import json
 import logging
 
@@ -63,7 +63,6 @@ class OpenAIConnector():
     #         "message": response_json,
     #     }
     #     return result
-    
     async def prompt(self,prompts:dict, response_spec: BaseModel = None, **kwargs):
             """
             Entrypoint for email requests routed to the data-agent"
@@ -72,18 +71,22 @@ class OpenAIConnector():
                 {"user_prompt": "I need to know the total sales by CREST segment"}
             ]
             """
+            langfuse_tags = kwargs.get('tags',[])
             response_spec = response_spec if response_spec is not None else {"type": "json_object"}
         
             prompt_messages = [
                 {"role": "system", "content": prompts['system_prompt']},
                 {"role": "user", "content": prompts['user_prompt']}
             ]
-            #No Async option exists for completions
-            completion = self.client.chat.completions.create(
-                model = self.deployment,
-                messages= prompt_messages,
-                response_format=response_spec
-            )
+            @observe()
+            def log_completion():
+                return self.client.chat.completions.create(
+                    model = self.deployment,
+                    messages= prompt_messages,
+                    response_format=response_spec,
+                    tags=langfuse_tags
+                )
+            completion = log_completion()
             tokens_used = completion.usage.total_tokens
             result = completion.choices[0].message.content
 
