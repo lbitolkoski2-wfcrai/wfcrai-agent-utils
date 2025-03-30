@@ -57,6 +57,18 @@ class BigQueryConnector():
             logging.error(f"query execution failed: {e}")
             return {"result": None, "error": str(e)}
 
+    async def run_stored_procedure(self, procedure_name, **kwargs):
+        job_config = QueryJobConfig(**kwargs)
+
+        query = f"CALL {procedure_name}();"
+        try:
+            job = self.client.query(query, job_config=job_config)
+            return {"result": job, "error": None}
+        except Exception as e:
+            logging.error(f"query execution failed: {e}")
+            return {"result": None, "error": str(e)}
+        
+
     def validate_query(self, query):
         # Use dry run to validate the query
         bq_job = {"job_id": None, "result": None, "error": None}

@@ -1,11 +1,15 @@
 [project]
-name = "agent-utils"
+name = "wfcrai-agent-utils"
 version = "0.1.0"
 description = "Agent utilities and connectors package"
 readme = "README.md"
-requires-python = ">=3.12.3"
+requires-python = ">=3.12"
 
 dependencies = [
+    "openai>=1.65.0",
     "atlassian-python-api>=4.0.0",
+    "dotenv>=0.9.9",
+    "google-cloud-bigquery>=3.31.0",
+    "langfuse>=2.60.2",
     "openai>=1.65.5",
 ]
