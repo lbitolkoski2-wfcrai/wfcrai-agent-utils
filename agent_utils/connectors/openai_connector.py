@@ -3,6 +3,7 @@ import os
 from langfuse.openai import AzureOpenAI
 from openai.types.beta import Assistant
 from pydantic import BaseModel
+# from langfuse.decorators import observe
 from langfuse.decorators import observe
 
 import time
@@ -78,7 +79,7 @@ class OpenAIConnector():
                 {"role": "system", "content": prompts['system_prompt']},
                 {"role": "user", "content": prompts['user_prompt']}
             ]
-            @observe()
+            # @observe()
             def log_completion():
                 return self.client.chat.completions.create(
                     model = self.deployment,
