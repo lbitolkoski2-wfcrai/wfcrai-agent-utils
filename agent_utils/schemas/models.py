@@ -1,24 +1,23 @@
 from pydantic import BaseModel, ConfigDict
-from typing import List, Dict, Any, Union
+from typing import List, Dict, Any, Union, Optional
 
-class DataAgentContext(BaseModel):
-    email_context: Dict[str, Any] # Email context for the request
-    global_context: Dict[str, Any] # Shared context preopulated for all agents
-    agent_context: Dict[str, Any] # Context populated for each agent upon completion {agent_name: agent_context}
-    responses: List[str] # Responses from all agents {agent_name: response} 
-    info: Dict[str, Any] # Potential logging information or other metadata
-    job_id: str
 
 class ConfluenceTable(BaseModel):
     model_config = ConfigDict(extra='allow')
+    overview: str
     table_name: str
     table_id: str
     limitations: str
-    overview: str
-    usage: str
+    notes: str
     key_fields: Dict[str, str]
 
-
+class ConfluenceBQPage(BaseModel): # dataset or dataset.table name -> confluence data
+    bq_resource_type: str #table or dataset
+    bq_resource_name: str #dataset_name or dataset_name.table_name
+    confluence_page_id: Optional[str] = None # Confluence page ID
+    confluence_parent_page_id : Optional[str] = None # if table, parent dataset page ID
+    confluence_page_content: Optional[str] = None # Confluence page content
+    
 class EmailContext(BaseModel):
     task_prompt: str
 

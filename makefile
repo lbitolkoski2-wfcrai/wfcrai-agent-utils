@@ -20,3 +20,8 @@ build:
 push:
 	docker tag $(IMAGE_NAME):$(TAG) $(FULL_IMAGE_NAME)
 	docker push $(FULL_IMAGE_NAME)
+
+.PHONY: utils
+utils:
+	uv build
+	uv pip install dist/*.whl
