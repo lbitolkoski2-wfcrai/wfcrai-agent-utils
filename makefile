@@ -24,4 +24,3 @@ push:
 .PHONY: utils
 utils:
 	uv build
-	uv pip install dist/*.whl
