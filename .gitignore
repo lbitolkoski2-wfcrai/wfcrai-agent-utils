@@ -1,4 +1,6 @@
 *.egg-info
 dist/*
 __pycache__/
-uv.lock
+.env
+.vscode/*
+adhoc/*

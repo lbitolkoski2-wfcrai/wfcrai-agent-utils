@@ -3,6 +3,8 @@ import json, toml
 import dotenv
 import os
 import logging
+from agent_utils.schemas.models import ConfluenceBQPage
+from agent_utils.components.confluence_parser import ConfluenceParser
 
 class ConfluenceConnector(): 
     '''
@@ -16,11 +18,12 @@ class ConfluenceConnector():
         dotenv.load_dotenv()
         self.config = config
         self.create_connection()
+        self.bq_mapping = self.get_bq_mapping()
 
     def create_connection(self):
         confluence = Confluence(
-            url=self.config['confluence']['connector']['base_url'], #Base URL for Confluence instance
-            username=os.getenv('CONFLUENCE_API_EMAIL'), #TODO - move all auth to secrets manager
+            url=self.config['confluence']['connector']['base_url'],
+            username=os.getenv('CONFLUENCE_API_EMAIL'),
             password=os.getenv('CONFLUENCE_API_KEY')
         )
         
@@ -31,95 +34,61 @@ class ConfluenceConnector():
         self.connection = confluence
 
     def get_pages_by_label(self, label):
-        pages = self.connection.get_all_pages_by_label(label, expand='version,ancestors')
+        pages = self.connection.get_all_pages_by_label(label, expand='version,ancestors', limit=1000)
         return pages
     
-    def get_page_by_id(self, page_id, doc_format='body.storage'): 
-        return self.connection.get_page_by_id(page_id, expand=doc_format)
+    # Returns the confluence page content for a given page ID
+    def get_page_by_id(self, page_id: str, doc_format='body.storage') -> ConfluenceBQPage:
+        page = self.connection.get_page_by_id(page_id, expand=doc_format)
+        qualified_name = page['title'].split(" ")[0].lower() # page title is the resource name
+        resource_type = "dataset" if "." not in page['title'] else "table" # if the page title contains a dot, it is a table
+        dataset_name = qualified_name.split(".")[0]
+        table_name = qualified_name.split(".")[1] if resource_type == "table" else None
+        #Strip unneccessary HTML content from the page
+        page_content = ConfluenceParser.clean_html(page['body']['storage']['value'])
+        return ConfluenceBQPage(
+            bq_resource_type=resource_type,
+            bq_table_name= table_name,
+            bq_dataset_name= dataset_name,
+            bq_qualified_name= qualified_name,
+            confluence_page_content= page_content,
+            confluence_page_id=page_id,
+        )
 
-    def get_page_data(self, page_id):
-        page = self.get_page_by_id(page_id)
-        return page
+    # gcp-wow-food-fco-auto-dev
 
-    # end generic confluence functions | begin WFCR Space specific functions
-
-    def get_gcp_mapping(self, **kwargs):
+    def get_bq_mapping(self, **kwargs):
         """
-        Returns a mapping of confluence pages to GCP table and dataset names.
-        {confluence_page_id: {table_name: table_name, dataset_page_id: dataset_id, dataset_name: dataset_name, conf_label: conf_label}}
+        Returns a mapping of confluence pages to BQ table and dataset names.
+        {confluence_page_id: bq_resource_name}
         """
         dataset_label = self.config['confluence']['connector']['dataset_label']
         table_label = self.config['confluence']['connector']['table_label']
 
         if (dataset_label is None) or (table_label is None):
-            logging.error("Failed to retrieve dataset or table labels for confluence API.")
+            logging.error("Failed to retrieve dataset or table labels from [config.confluence.connector].")
             return None
 
         dataset_pages = self.get_pages_by_label(dataset_label)
         table_pages = self.get_pages_by_label(table_label)
-
-        gcp_mapping = {self.trim_ct(page["id"]):self.trim_ct(page["title"]) for page in dataset_pages} 
-        table_mapping = {}
-        for table in table_pages:
-            table_title = self.trim_ct(table["title"])
-            parent_dataset = None
-            parent_id = None
-            for ancestor in table["ancestors"]:
-                parent_trimmed = self.trim_ct(ancestor["title"])
-                if parent_trimmed in gcp_mapping.values():
-                    parent_dataset = parent_trimmed
-                    parent_id = ancestor["id"]
-                    break
-            table_mapping[table["id"]] = {
-                "table_name": table_title, 
-                "dataset_page_id": parent_id,
-                "dataset_name": parent_dataset,
-                "conf_label": dataset_label if parent_dataset is not None else table_label # If no parent then is a dataset
-            }
-        return table_mapping
-
-    def get_gcp_context(self, page_ids=None, **kwargs):
-        """
-        Gets the confluence page content for all GCP Tables.
-        page_ids = [confluence_page_id]
-        """
-        gcp_mapping = kwargs.get('gcp_mapping', self.get_gcp_mapping())
-        # Filter table_mapping to include only specified page_ids
-        if page_ids is not None:
-            gcp_mapping = {k: v for k, v in gcp_mapping.items() if k in page_ids}
-        
-        # Get raw page content for all requested pages
-        for page_id in gcp_mapping.keys():
-            page_ctx = self.get_page_by_id(page_id)
-            page_body = page_ctx['body']['storage']['value']
-
-            if page_body is None:
-                logging.error(f"Failed to retrieve page content for {gcp_mapping[page_id]}. ")
-            else:
-                logging.info(f"Successfully retrieved page content for {gcp_mapping[page_id]}.")
-                gcp_mapping[page_id]["content"] = page_body
-
-        gcp_context = {v["dataset_name"]: {"tables": {}, "dataset_content": None} for v in gcp_mapping.values()}
-
-        for table_id, table_info in gcp_mapping.items():
-            table_name = table_info["table_name"]
-            table_content = table_info["content"]
-            dataset_name = table_info["dataset_name"]
-
-            if gcp_context.get(dataset_name) is not None:
-                gcp_context[dataset_name]["tables"][table_name] = table_content
-        #TODO: add dataset content to gcp_context (table content only for now)
-        return gcp_context
+        bq_mapping = {page['title'].split(" ")[0].lower():page['id'] for page in dataset_pages + table_pages}
+        bq_mapping = {k: v for k, v in bq_mapping.items() if k.split('.')[0] in self.config['bigquery']['valid_datasets']}
+        return bq_mapping
     
-    def get_pages_from_qualified_names(self, qualified_names: list[str], **kwargs): #eg. ['product.sales']
-        page_ids = self.get_page_ids_from_qualified_names(qualified_names, **kwargs)
-        return self.get_gcp_context(page_ids, **kwargs)
+    def get_bigquery_documentation_context(self, bq_resources=None):
+        """
+        Gets the confluence page content for all BQ Tables.
+        bq_resources: list of bq resources [dataset.table] to include. if None, all resources are included.
+        """
+        #Filter out only requested and valid resources
+        mapping = self.get_bq_mapping()
+        mapping = {k: v for k, v in mapping.items() if k.split('.')[0] in self.config['bigquery']['valid_datasets']}
+        if bq_resources is not None:
+            mapping = {k: v for k, v in mapping.items() if k in bq_resources}  
 
-    def get_page_ids_from_qualified_names(self, qualified_names: list[str], **kwargs):
-        gcp_mapping = kwargs.get('gcp_mapping', self.get_gcp_mapping())
-        page_ids = [k for k, v in gcp_mapping.items() if f"{v['dataset_name']}.{v['table_name']}" in qualified_names]
-        return page_ids
+        # Get context for each page
+        page_ids = mapping.values()
+        pages = [self.get_page_by_id(page_id) for page_id in page_ids]
+        bq_documentation = {page.bq_qualified_name: page.model_dump() for page in pages}
+        return bq_documentation
 
-    def trim_ct(self, title): # Get the dataset or table name from the page title
-        return title.split(" ")[0].lower()
-    

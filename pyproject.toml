@@ -11,5 +11,7 @@ dependencies = [
     "dotenv>=0.9.9",
     "google-cloud-bigquery>=3.31.0",
     "langfuse>=2.60.2",
-    "openai>=1.65.5",
+    "toml>=0.10.2",
+    "google-cloud-storage>=3.1.0",
+    "google-cloud-firestore>=2.20.1"
 ]
