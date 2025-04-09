@@ -2,9 +2,9 @@ from langfuse.decorators import observe, langfuse_context
 import asyncio
 import os 
 
-def observe_with_tags(tags=[]):
+def observe_with_tags(name,tags=[]):
     def decorator(func):
-        @observe
+        @observe(name=name)
         async def wrapper(*args, **kwargs):
             langfuse_context.update_current_trace(tags=tags, metadata={
                 "agent_name": os.getenv("AGENT_NAME", "unknown")

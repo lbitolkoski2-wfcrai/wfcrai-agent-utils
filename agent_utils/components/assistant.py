@@ -3,6 +3,7 @@ import hashlib
 from agent_utils.connectors.fs_connector import FirestoreConnector
 from pydantic import BaseModel
 from agent_utils.schemas.models import AssistantResponse
+import os
 
 class Assistant:
     """
@@ -36,7 +37,12 @@ class Assistant:
             return cached_response
 
         logging.info(f"Running assistant: {prompt_key} with prompt: {prompts['user_prompt'][:100]}")
-        response = await self.llm_connector.prompt(ctx, prompts, self._response_spec(response_schema, prompt_key))
+        langfuse_params = {
+            "tags" : [os.getenv("AGENT_NAME", "agent_uknown")],
+            "request_id": ctx.email_context['request_id'],
+            "name": prompt_key
+        }
+        response = await self.llm_connector.prompt(ctx, prompts, self._response_spec(response_schema, prompt_key), langfuse_params=langfuse_params)
         result = AssistantResponse(**prompts, response=response)
 
         if cache:

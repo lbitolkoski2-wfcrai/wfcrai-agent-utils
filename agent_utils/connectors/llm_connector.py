@@ -17,7 +17,7 @@ class LLMConnector:
         user_prompt = prompts['user_prompt']
 
         if self.connector_type == "openai":
-            return self.openai_connector.prompt(prompts, response_schema)
+            return self.openai_connector.prompt(prompts, response_schema, **kwargs)
         # elif self.connector_type == "gemini":
         #     return self.gemini_connector.prompts(ctx, assistant_name, response_schema, additional_context)
         else:
