@@ -4,8 +4,7 @@ from langfuse.openai import AzureOpenAI
 from openai.types.beta import Assistant
 from pydantic import BaseModel
 # from langfuse.decorators import observe
-from langfuse.decorators import observe
-
+from langfuse.decorators import observe, langfuse_context
 import time
 import json
 import logging
@@ -44,22 +43,28 @@ class OpenAIConnector():
                 {"user_prompt": "I need to know the total sales by CREST segment"}
             ]
             """
-            langfuse_tags = kwargs.get('tags',[])
             response_spec = response_spec if response_spec is not None else {"type": "json_object"}
         
             prompt_messages = [
                 {"role": "system", "content": prompts['system_prompt']},
                 {"role": "user", "content": prompts['user_prompt']}
             ]
-            # @observe()
-            def log_completion():
+            
+            langfuse_params = kwargs.get('langfuse_params', {})
+            tags = langfuse_params.get('tags', [])
+
+            @observe(name=langfuse_params.get('name', 'unknown'))
+            def log_completion(prompt_messages):
+                langfuse_context.update_current_trace(
+                    tags=langfuse_params.get('tags', []),
+                    session_id=langfuse_params.get('request_id', 'unknown')
+                )
                 return self.client.chat.completions.create(
                     model = self.deployment,
                     messages= prompt_messages,
-                    response_format=response_spec,
-                    tags=langfuse_tags
+                    response_format=response_spec
                 )
-            completion = log_completion()
+            completion = log_completion(prompt_messages)
             tokens_used = completion.usage.total_tokens
             result = completion.choices[0].message.content
 
