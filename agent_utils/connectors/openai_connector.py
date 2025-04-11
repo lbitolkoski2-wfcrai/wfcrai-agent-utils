@@ -53,12 +53,7 @@ class OpenAIConnector():
             langfuse_params = kwargs.get('langfuse_params', {})
             tags = langfuse_params.get('tags', [])
 
-            @observe(name=langfuse_params.get('name', 'unknown'))
             def log_completion(prompt_messages):
-                langfuse_context.update_current_trace(
-                    tags=langfuse_params.get('tags', []),
-                    session_id=langfuse_params.get('request_id', 'unknown')
-                )
                 return self.client.chat.completions.create(
                     model = self.deployment,
                     messages= prompt_messages,

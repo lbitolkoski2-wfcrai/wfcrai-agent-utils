@@ -55,7 +55,61 @@ class ConfluenceConnector():
             confluence_page_id=page_id,
         )
 
+    def get_cql(self, cql_string):
+        results = (self.connection.cql(cql, limit=1000))
+        results_mapping = {}
+        for result in results:
+            space = result['resultGlobalContainer']['title']
+            title = result['content']['title']
+            page_id = result['content']['id']
+        results = self.connection.cql(cql_string)
+
     # gcp-wow-food-fco-auto-dev
+
+    def synchronize_confluence(self):
+        """
+        Synchronizes certain pages from WFCR space to the WFCRAI space.
+        """
+        pages_to_sync = os.getenv('PAGES_TO_SYNC', "opal,sphere,bamboo_rose,plexus").split(",")
+        title_queries = [f'title ~ "{page}*"' for page in pages_to_sync]
+        from_cql = "type=page AND (" + " OR ".join(title_queries) + ") AND space = WFCR"
+        to_cql = "type=page AND (" + " OR ".join(title_queries) + ") AND space = WFCRAI"
+        
+        from_results = self.connection.cql(from_cql, limit=1000)
+        to_results = self.connection.cql(to_cql, limit=1000)
+        
+        from_results_dict = {result['content']['title']: result for result in from_results['results']}
+        to_results_dict = {result['content']['title']: result for result in to_results['results']}
+        
+        results_mapping = {}
+        for title, from_result in from_results_dict.items():
+            to_result = to_results_dict.get(title)
+            results_mapping[title] = {
+                'from': from_result,
+                'to': to_result
+            }
+
+        for title, result in results_mapping.items():
+            if result['to'] is None:
+                pass
+                # Create a new page in WFCRAI space
+                self.connection.create_page(
+                    space='WFCRAI',
+                    title=title,
+                    body=self.connection.get_page_by_id(result['from']['content']['id'])['body']['storage']['value'],
+                    parent_id=result['from']['content']['ancestors'][0]['id'],
+                    representation='storage'
+                )
+            else:
+                # Update the existing page in WFCRAI space
+                page_content = self.connection.get_page_by_id(result['from']['content']['id'], expand='body.storage')
+                print(f"from: {result['from']['title']} to: {result['to']['title']}")
+                self.connection.update_page(
+                    page_id=result['to']['content']['id'],
+                    title=title,
+                    body=page_content['body']['storage']['value'],
+                    representation='storage'
+                )
 
     def get_bq_mapping(self, **kwargs):
         """
