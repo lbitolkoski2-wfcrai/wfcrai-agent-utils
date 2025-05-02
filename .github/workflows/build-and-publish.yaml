@@ -21,8 +21,6 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
-        with:
-          fetch-depth: 0   # fetch all tags so we can commit
 
       - name: Extract version from tag
         run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
@@ -30,13 +28,6 @@ jobs:
       - name: Update version in pyproject.toml
         run: |
           sed -i "s/^version = .*/version = \"${{ env.VERSION }}\"/" pyproject.toml
-
-      - name: Commit version bump
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "chore: bump version to ${{ env.VERSION }}"
-          file_pattern: pyproject.toml
-          push_options: '--force'
 
       - name: Authenticate to Google Cloud
         id: auth
@@ -55,7 +46,7 @@ jobs:
 
       - name: Install uv
         uses: astral-sh/setup-uv@v5
-        
+
       - name: Build python package
         run: uv build
 
