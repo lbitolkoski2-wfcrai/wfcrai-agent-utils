@@ -1,6 +1,6 @@
 [project]
 name = "wfcrai-agent-utils"
-version = "0.1.0"
+version = "0.0.1"
 description = "Agent utilities and connectors package"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -15,3 +15,8 @@ dependencies = [
     "google-cloud-storage>=3.1.0",
     "google-cloud-firestore>=2.20.1"
 ]
+
+[[tool.uv.index]]
+name = "wfcrai-agent-utils-gar"
+url = "https://us-central1-python.pkg.dev/gcp-wow-food-wfc-ai-dev/wfcrai-agent-utils"
+publish-url = "https://us-central1-python.pkg.dev/gcp-wow-food-wfc-ai-dev/wfcrai-agent-utils"
