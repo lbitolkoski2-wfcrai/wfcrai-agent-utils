@@ -2,9 +2,9 @@ name: Build and Publish
 
 on:
   push:
-    # fire only on semver tags, e.g. v1.2.3
+    # fire only on semver tags, e.g. 1.2.3
     tags:
-      - 'v*.*.*'
+      - '*.*.*'
 
 jobs:
   build-and-push:
@@ -21,8 +21,6 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
-        with:
-          fetch-depth: 0   # fetch all tags so we can commit
 
       - name: Extract version from tag
         run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
@@ -30,13 +28,6 @@ jobs:
       - name: Update version in pyproject.toml
         run: |
           sed -i "s/^version = .*/version = \"${{ env.VERSION }}\"/" pyproject.toml
-
-      - name: Commit version bump
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "chore: bump version to ${{ env.VERSION }}"
-          commit_user_name: github-actions[bot]
-          file_pattern: pyproject.toml
 
       - name: Authenticate to Google Cloud
         id: auth
@@ -52,6 +43,9 @@ jobs:
           registry: ${{ env.GAR_LOCATION }}-docker.pkg.dev
           username: oauth2accesstoken
           password: ${{ steps.auth.outputs.access_token }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
 
       - name: Build python package
         run: uv build
