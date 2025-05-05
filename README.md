@@ -80,7 +80,7 @@ export UV_INDEX_PRIVATE_REGISTRY_USERNAME=oauth2accesstoken
 ### 2. Set gcloud project and refresh authentication token
 
 ```bash
-gcloud auth login --project gcp-wow-food-wfc-ai-dev && gcloud auth application-default login --project gcp-wow-food-wfc-ai-de
+gcloud auth login --project gcp-wow-food-wfc-ai-dev && gcloud auth application-default login --project gcp-wow-food-wfc-ai-dev
 ```
 
 
