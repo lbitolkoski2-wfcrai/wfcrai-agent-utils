@@ -56,3 +56,36 @@ task = "Summarize the following HTML content {confluence_html_content}"
 - `dict`: A dictionary containing the results and the number of tokens used.
   - `results (dict)`: The formatted prompt and the JSON response from the assistant conforming to the response schema.
   - `tokens_used (int)`: The number of tokens used in the assistant call.
+
+## Publish new version
+
+### 1. Merge your new branch into main
+### 2. Create a new release with a new tag, here is an sample: https://github.com/lbitolkoski2-wfcrai/wfcrai-agent-utils/releases/tag/0.0.2
+### 3. The workflow will build and publish to https://us-central1-python.pkg.dev/gcp-wow-food-wfc-ai-dev/wfcrai-agent-utils
+
+## Installation
+
+### 1. Authenticate with Artifact Registry  
+Install the keyring helpers so pip can pull from GAR:
+
+```bash
+uv add keyrings.google-artifactregistry-auth
+
+# Enable keyring authentication
+export UV_KEYRING_PROVIDER=subprocess
+
+# Set the username for the index
+export UV_INDEX_PRIVATE_REGISTRY_USERNAME=oauth2accesstoken
+```
+### 2. Set gcloud project and refresh authentication token
+
+```bash
+gcloud auth login --project gcp-wow-food-wfc-ai-dev && gcloud auth application-default login --project gcp-wow-food-wfc-ai-de
+```
+
+
+### 3. Installing agent-utils from gar
+
+```bash
+uv add wfcrai-agent-utils --keyring-provider subprocess --index https://oauth2accesstoken@us-central1-python.pkg.dev/gcp-wow-food-wfc-ai-dev/wfcrai-agent-utils/simple/
+```
